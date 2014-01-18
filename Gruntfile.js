@@ -34,22 +34,11 @@ module.exports = function(grunt) {
 		simple_comments: {
 			default_options: {
 				options: {
-				},
-				files: {
-					'tmp/default_options': ['test/fixtures/testing', 'test/fixtures/123'],
-				},
-			},
-			custom_options: {
-				options: {
-					separator: ': ',
-					punctuation: ' !!!',
-				},
-				files: {
-					'tmp/custom_options': ['test/fixtures/testing', 'test/fixtures/123'],
-				},
-			},
+					'appId': appId,
+					'masterKey': masterKey
+				}
+			}
 		},
-
 		// Unit tests.
 		nodeunit: {
 			tests: ['test/*_test.js'],
