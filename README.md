@@ -1,6 +1,6 @@
 # grunt-simple-comments
 
-[![Build Status](https://travis-ci.org/paazmaya/grunt-togeojson.png?branch=master)](https://travis-ci.org/paazmaya/grunt-togeojson)
+[![Build Status](https://travis-ci.org/tnajdek/grunt-simple-comments.png?branch=master)](https://travis-ci.org/paazmaya/grunt-togeojson)
 
 > Grunt task to setup and remotely review comments stored on parse.com and created on a site using simple-comments library
 
