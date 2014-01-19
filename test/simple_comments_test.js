@@ -2,7 +2,7 @@
 
 var grunt = require('grunt'),
 	Parse = require('node-parse-api').Parse,
-	process.env.PARSE_APP_ID,
+	appId = process.env.PARSE_APP_ID,
 	masterKey = process.env.PARSE_MASTER_KEY,
 	testapp;
 
@@ -28,19 +28,36 @@ var grunt = require('grunt'),
 
 exports.simple_comments = {
 	setUp: function(done) {
-		// setup here if necessary
-		testapp = new Parse(appId, masterKey);
+		var queued_comment1 = {
+				name: 'tester',
+				email: 'tester@tester.com',
+				website: 'http://tester.com',
+				comment: 'Hello World',
+				slug: 'some-post'
+			},
+			approved_comment = {
+				objectId: 'iyZEI9WptO',
+				name: 'tester',
+				comment: 'Just some text',
+				slug: 'some-post'
+			},
+			queued_comment2 = {
+				name: 'tester 2',
+				email: 'tester2@tester.com',
+				website: 'http://tester2.com',
+				comment: 'Thats right!',
+				slug: 'some-post',
+				replyTo: 'iyZEI8WptO'
+			};
 		
-
-		done();
-	},
-	default_options: function(test) {
-		test.expect(1);
-
-		var actual = grunt.file.read('tmp/default_options');
-		var expected = grunt.file.read('test/expected/default_options');
-		test.equal(actual, expected, 'should describe what the default behavior is.');
-
-		test.done();
+		testapp = new Parse(appId, masterKey);
+		testapp.insert('comments_queue', queued_comment1, function (err, response) {
+			console.log(response);
+		});
+		testapp.insert('comments_approved', approved_comment, function(err, response) {
+			testapp.insert('comments_queue', queued_comment2, function(err, response) {
+				done();
+			});
+		});
 	}
 };
