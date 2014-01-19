@@ -2,6 +2,9 @@
 
 var grunt = require('grunt'),
 	Parse = require('node-parse-api').Parse,
+	Deferred = require("promised-io/promise").Deferred,
+	all = require("promised-io/promise").all,
+	_ = require('lodash'),
 	appId = process.env.PARSE_APP_ID,
 	masterKey = process.env.PARSE_MASTER_KEY,
 	testapp;
@@ -36,7 +39,6 @@ exports.simple_comments = {
 				slug: 'some-post'
 			},
 			approved_comment = {
-				objectId: 'iyZEI9WptO',
 				name: 'tester',
 				comment: 'Just some text',
 				slug: 'some-post'
@@ -46,18 +48,58 @@ exports.simple_comments = {
 				email: 'tester2@tester.com',
 				website: 'http://tester2.com',
 				comment: 'Thats right!',
-				slug: 'some-post',
-				replyTo: 'iyZEI8WptO'
-			};
-		
+				slug: 'some-post'
+			}, promises = [];
+
+		function rejectOrResolve(promise, err, response) {
+			if(err) {
+				console.log(err);
+				promise.reject(err);
+			} else {
+				promise.resolve(response);
+			}
+		}
+
 		testapp = new Parse(appId, masterKey);
-		testapp.insert('comments_queue', queued_comment1, function (err, response) {
-			console.log(response);
-		});
-		testapp.insert('comments_approved', approved_comment, function(err, response) {
-			testapp.insert('comments_queue', queued_comment2, function(err, response) {
-				done();
+
+		promises.push(new Deferred());
+		testapp.findMany('comments_queue', {}, _.partial(rejectOrResolve, _.last(promises)));
+		_.last(promises).then(function(query) {
+			query.results.forEach(function(item) {
+				promises.push(new Deferred());
+				testapp.delete('comments_queue', item.objectId, _.partial(rejectOrResolve, _.last(promises)));
 			});
 		});
+
+		promises.push(new Deferred());
+		testapp.findMany('comments_approved', {}, _.partial(rejectOrResolve, _.last(promises)));
+		_.last(promises).then(function(query) {
+			query.results.forEach(function(item) {
+				promises.push(new Deferred());
+				testapp.delete('comments_approved', item.objectId, _.partial(rejectOrResolve, _.last(promises)));
+			});
+		});
+		all(promises).then(function() {
+			//all delete deferreds should complete before we move on
+			promises.push(new Deferred());
+			testapp.insert('comments_queue', queued_comment1, _.partial(rejectOrResolve, _.last(promises)));
+			promises.push(new Deferred());
+			testapp.insert('comments_approved', approved_comment, _.partial(rejectOrResolve, _.last(promises)));
+			_.last(promises).then(function(item) {
+				queued_comment2.replyTo = item.objectId;
+				promises.push(new Deferred());
+				testapp.insert('comments_queue', queued_comment2, _.partial(rejectOrResolve, _.last(promises)));
+				all(promises).then(function() {
+					done();
+				});
+			});
+		});
+	},
+	parseConfigured: function(test) {
+		test.notEqual(typeof(appId), undefined);
+		test.notEqual(typeof(masterKey), undefined);
+		test.equal(appId.length, 40);
+		test.equal(masterKey.length, 40);
+		test.done();
 	}
 };
